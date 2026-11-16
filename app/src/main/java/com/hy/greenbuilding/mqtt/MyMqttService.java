@@ -72,12 +72,13 @@ import javax.net.ssl.X509TrustManager;
 
 public class MyMqttService extends Service {
     private static String mClientId = "hy_1_" + PackageUtil.getSerialNumber();
+    private static String mGreenClientId = mClientId + "_green";
     private static IGetMessageCallBack IGetMessageCallBack;
     private static Context mContext;
     //ota服务器
-    private static String host = "tcp://8.129.88.64:1883";
-    private static String userName = "test02";
-    private static String passWord = "123456";
+    private static String host = "tcp://app.lowcarn.com:1883";
+    private static String userName = "test";
+    private static String passWord = "test";
     private static MqttClient client;
     private static MqttConnectOptions conOpt;
 
@@ -126,7 +127,7 @@ public class MyMqttService extends Service {
     private void initMqtt() {
         String uri = host;
         try {
-            client = new MqttClient(uri, "hy_1_" + PackageUtil.getSerialNumber(), new MemoryPersistence());
+            client = new MqttClient(uri, mClientId, new MemoryPersistence());
         } catch (MqttException e) {
             Log.e("service", "create ota mqtt client failed", e);
         }
@@ -146,7 +147,7 @@ public class MyMqttService extends Service {
     private void initGreenMqtt() {
         String uri = host_green;
         try {
-            client_green = new MqttClient(uri, "hy_1_" + PackageUtil.getSerialNumber(), new MemoryPersistence());
+            client_green = new MqttClient(uri, mGreenClientId, new MemoryPersistence());
         } catch (MqttException e) {
             Log.e("service", "create green mqtt client failed", e);
         }
@@ -208,7 +209,6 @@ public class MyMqttService extends Service {
 
     //数据上报绿建服务器
     public static void publishGreen(byte[] bytes, String clientId, String topicType) {
-        mClientId = clientId;
         String topic = "L/" + PackageUtil.getMAC() + "/" + topicType;
         Log.i("info", "ota topic---" + topic);
         try {
@@ -444,7 +444,7 @@ public class MyMqttService extends Service {
 //    };
 
     private static void greenMqttConnectSuccess() {
-        Log.i("service", "green mqtt connect success---" + mClientId);
+        Log.i("service", "green mqtt connect success---" + mGreenClientId);
         publishGreen(PackageUtil.getMAC().getBytes(), mClientId, "A");
         String topic = "L/" + PackageUtil.getMAC() + "/L";
         if (mHandler != null) {
