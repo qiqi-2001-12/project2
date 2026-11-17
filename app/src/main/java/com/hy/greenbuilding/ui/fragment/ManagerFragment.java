@@ -125,15 +125,12 @@ public class ManagerFragment extends Fragment implements CompoundButton.OnChecke
     private List<String> testData;
     private ArrayAdapter<String> testDataAdapter;
     private int termType = 2;
-    private int termUiType = 2;
     private static final int TERM_LOW_TEMP = 1;
     private static final int TERM_PV = 2;
     private static final int TERM_UP_TEMP = 3;
-    private static final int TERM_NO_POWER_CONTROL = 4;
     private String mLowTemp = "低温增焓";
     private String mPV = "光伏";
     private String mUpTemp = "升温除湿";
-    private String mNoPowerControl = "无动力分控系统";
 
     @Nullable
     @Override
@@ -153,13 +150,12 @@ public class ManagerFragment extends Fragment implements CompoundButton.OnChecke
         SaveControlInfo controlData = getControlData();
         int type = controlData.getOutTermType();
         termType = type;
-        termUiType = getSavedTermUiType(type);
         if (type == TERM_LOW_TEMP) {
             mTitleSpinner.setText(mLowTemp);
         } else if (type == TERM_PV) {
             mTitleSpinner.setText(mPV);
         } else if (type == TERM_UP_TEMP) {
-            mTitleSpinner.setText(termUiType == TERM_NO_POWER_CONTROL ? mNoPowerControl : mUpTemp);
+            mTitleSpinner.setText(mUpTemp);
         }
         set_power_switch.setOnCheckedChangeListener(this);
 
@@ -343,7 +339,7 @@ public class ManagerFragment extends Fragment implements CompoundButton.OnChecke
         } else if (mTitleSpinner.getText().toString().equals(mPV)) {
             PVFragment fragment = new PVFragment();
             fragment.show(getParentFragmentManager(), "PV");
-        } else if (isUpTempMode(mTitleSpinner.getText().toString())) {
+        } else if (mTitleSpinner.getText().toString().equals(mUpTemp)) {
             UpTempFragment fragment = new UpTempFragment();
             fragment.show(getParentFragmentManager(), "upTemp");
         }
@@ -369,7 +365,6 @@ public class ManagerFragment extends Fragment implements CompoundButton.OnChecke
                     controlInfo.setOutTermType(termType);
                     String json = new Gson().toJson(controlInfo);
                     MySpUtil.setParam(getContext(), MySpUtil.MAIN_CONTROL_STATUS, json);
-                    MySpUtil.setParam(getContext(), MySpUtil.OUT_TERM_UI_TYPE, termUiType);
                 }
             }else if (event.getType() == 1) {
                 if (event.getStatus()) {
@@ -408,19 +403,12 @@ public class ManagerFragment extends Fragment implements CompoundButton.OnChecke
                     if (mTitleSpinner.getText().equals(mPV)) {
                         sendData = new byte[]{(byte) 0x00, (byte) 0x02};
                         termType = TERM_PV;
-                        termUiType = TERM_PV;
                     } else if (mTitleSpinner.getText().equals(mLowTemp)) {
                         sendData = new byte[]{(byte) 0x00, (byte) 0x01};
                         termType = TERM_LOW_TEMP;
-                        termUiType = TERM_LOW_TEMP;
                     } else if (mTitleSpinner.getText().equals(mUpTemp)) {
                         sendData = new byte[]{(byte) 0x00, (byte) 0x03};
                         termType = TERM_UP_TEMP;
-                        termUiType = TERM_UP_TEMP;
-                    } else if (mTitleSpinner.getText().equals(mNoPowerControl)) {
-                        sendData = new byte[]{(byte) 0x00, (byte) 0x03};
-                        termType = TERM_UP_TEMP;
-                        termUiType = TERM_NO_POWER_CONTROL;
                     }
 
                     controlCommand.setData(sendData);
@@ -430,7 +418,7 @@ public class ManagerFragment extends Fragment implements CompoundButton.OnChecke
             }
         });
         int popupWidth = dpToPx(getContext(), 200);
-        int popupHeight = dpToPx(getContext(), 260);
+        int popupHeight = dpToPx(getContext(), 200);
         typeSelectPopup = new PopupWindow(mTypeLv, popupWidth, popupHeight, true);
 
         Drawable drawable = ContextCompat.getDrawable(getContext(), R.drawable.btn_bg_common1);
@@ -449,20 +437,6 @@ public class ManagerFragment extends Fragment implements CompoundButton.OnChecke
         testData.add(mPV);
         testData.add(mLowTemp);
         testData.add(mUpTemp);
-        testData.add(mNoPowerControl);
-    }
-
-    private boolean isUpTempMode(String value) {
-        return mUpTemp.equals(value) || mNoPowerControl.equals(value);
-    }
-
-    private int getSavedTermUiType(int outTermType) {
-        if (getContext() == null) return outTermType;
-        int savedType = (int) MySpUtil.getParam(getContext(), MySpUtil.OUT_TERM_UI_TYPE, outTermType);
-        if (outTermType == TERM_UP_TEMP && savedType == TERM_NO_POWER_CONTROL) {
-            return TERM_NO_POWER_CONTROL;
-        }
-        return outTermType;
     }
 
     /**

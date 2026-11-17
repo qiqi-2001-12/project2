@@ -80,15 +80,12 @@ public class ManagerActivity extends BaseActivity {
     private List<String> testData;
     private ArrayAdapter<String> testDataAdapter;
     private int termType = 2;
-    private int termUiType = 2;
     private static final int TERM_LOW_TEMP = 1;
     private static final int TERM_PV = 2;
     private static final int TERM_UP_TEMP = 3;
-    private static final int TERM_NO_POWER_CONTROL = 4;
     private String mLowTemp = "低温增焓";
     private String mPV = "光伏";
     private String mUpTemp = "升温除湿";
-    private String mNoPowerControl = "无动力分控系统";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -106,13 +103,12 @@ public class ManagerActivity extends BaseActivity {
         SaveControlInfo controlData = getControlData();
         int type = controlData.getOutTermType();
         termType = type;
-        termUiType = getSavedTermUiType(type);
         if (type == TERM_LOW_TEMP) {
             mTitleSpinner.setText(mLowTemp);
         } else if (type == TERM_PV) {
             mTitleSpinner.setText(mPV);
         } else if (type == TERM_UP_TEMP) {
-            mTitleSpinner.setText(termUiType == TERM_NO_POWER_CONTROL ? mNoPowerControl : mUpTemp);
+            mTitleSpinner.setText(mUpTemp);
         }
     }
 
@@ -185,7 +181,7 @@ public class ManagerActivity extends BaseActivity {
         } else if (mTitleSpinner.getText().toString().equals(mPV)) {
             PVFragment fragment = new PVFragment();
             fragment.show(getSupportFragmentManager(), "PV");
-        } else if (isUpTempMode(mTitleSpinner.getText().toString())) {
+        } else if (mTitleSpinner.getText().toString().equals(mUpTemp)) {
             UpTempFragment fragment = new UpTempFragment();
             fragment.show(getSupportFragmentManager(), "upTemp");
         }
@@ -210,7 +206,6 @@ public class ManagerActivity extends BaseActivity {
                     controlInfo.setOutTermType(termType);
                     String json = new Gson().toJson(controlInfo);
                     MySpUtil.setParam(ManagerActivity.this, MySpUtil.MAIN_CONTROL_STATUS, json);
-                    MySpUtil.setParam(ManagerActivity.this, MySpUtil.OUT_TERM_UI_TYPE, termUiType);
                 }
             }
         }
@@ -232,28 +227,18 @@ public class ManagerActivity extends BaseActivity {
                         byte[] sendData = {(byte) 0x00, (byte) 0x02};
                         controlCommand.setData(sendData);
                         termType = TERM_PV;
-                        termUiType = TERM_PV;
                         SpDataProcessor.getInstance().send(controlCommand);
                     } else if (mTitleSpinner.getText().equals(mLowTemp)) {
                         ControlCommand controlCommand = new ControlCommand(FunctionObject.SET_OUTDOOR_TYPE);
                         byte[] sendData = {(byte) 0x00, (byte) 0x01};
                         controlCommand.setData(sendData);
                         termType = TERM_LOW_TEMP;
-                        termUiType = TERM_LOW_TEMP;
                         SpDataProcessor.getInstance().send(controlCommand);
                     } else if (mTitleSpinner.getText().equals(mUpTemp)) {
                         ControlCommand controlCommand = new ControlCommand(FunctionObject.SET_OUTDOOR_TYPE);
                         byte[] sendData = {(byte) 0x00, (byte) 0x03};
                         controlCommand.setData(sendData);
                         termType = TERM_UP_TEMP;
-                        termUiType = TERM_UP_TEMP;
-                        SpDataProcessor.getInstance().send(controlCommand);
-                    } else if (mTitleSpinner.getText().equals(mNoPowerControl)) {
-                        ControlCommand controlCommand = new ControlCommand(FunctionObject.SET_OUTDOOR_TYPE);
-                        byte[] sendData = {(byte) 0x00, (byte) 0x03};
-                        controlCommand.setData(sendData);
-                        termType = TERM_UP_TEMP;
-                        termUiType = TERM_NO_POWER_CONTROL;
                         SpDataProcessor.getInstance().send(controlCommand);
                     }
 
@@ -261,7 +246,7 @@ public class ManagerActivity extends BaseActivity {
                 typeSelectPopup.dismiss();
             }
         });
-        typeSelectPopup = new PopupWindow(mTypeLv, 200, 260, true);
+        typeSelectPopup = new PopupWindow(mTypeLv, 200, 200, true);
         Drawable drawable = ContextCompat.getDrawable(this, R.drawable.btn_bg_common1);
         typeSelectPopup.setBackgroundDrawable(drawable);
         typeSelectPopup.setFocusable(true);
@@ -279,19 +264,6 @@ public class ManagerActivity extends BaseActivity {
         testData.add(mPV);
         testData.add(mLowTemp);
         testData.add(mUpTemp);
-        testData.add(mNoPowerControl);
-    }
-
-    private boolean isUpTempMode(String value) {
-        return mUpTemp.equals(value) || mNoPowerControl.equals(value);
-    }
-
-    private int getSavedTermUiType(int outTermType) {
-        int savedType = (int) MySpUtil.getParam(ManagerActivity.this, MySpUtil.OUT_TERM_UI_TYPE, outTermType);
-        if (outTermType == TERM_UP_TEMP && savedType == TERM_NO_POWER_CONTROL) {
-            return TERM_NO_POWER_CONTROL;
-        }
-        return outTermType;
     }
 
     /**
